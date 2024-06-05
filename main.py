@@ -3,7 +3,7 @@ import time
 import subprocess
 
 NUXMV_PATH = r'C:\Users\ykupfer\Personal\nuXmv-2.0.0-win64\bin'
-BOARD_PATH = r"C:\Users\ykupfer\Personal\foraml verification final project\FVS final project\boards\board1.txt"
+BOARD_PATH = r"C:\Users\ykupfer\Personal\foraml verification final project\FVS final project\boards\board3.txt"
 
 def printBoard(board):
     print("****SOKOBAN****")

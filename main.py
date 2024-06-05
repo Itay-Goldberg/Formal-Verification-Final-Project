@@ -5,7 +5,7 @@ import subprocess
 NUXMV_PATH = r'C:\Users\ykupfer\Personal\nuXmv-2.0.0-win64\bin'
 BOARD_PATH = r"C:\Users\ykupfer\Personal\foraml verification final project\FVS final project\boards\board1.txt"
 TEMP_PATH = r"C:\Users\ykupfer\Personal\foraml verification final project\FVS final project"
-LURD_PATH r"C:\Users\ykupfer\Personal\foraml verification final project\FVS final project"
+LURD_PATH = r"C:\Users\ykupfer\Personal\foraml verification final project\FVS final project"
 
 NUXMV_PATH_ITAY = r'C:\Users\05ita\OneDrive - Bar-Ilan University - Students\לימודים\שנה ד\סמסטר א\אימות פורמלי\nuXmv-2.0.0-win64.tar\nuXmv-2.0.0-win64\nuXmv-2.0.0-win64\bin'
 BOARD_PATH_ITAY = r"C:\Users\05ita\Desktop\code_files\py_files\formalVS_files\boards\board1.txt"

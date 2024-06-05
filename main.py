@@ -4,15 +4,21 @@ import subprocess
 
 NUXMV_PATH = r'C:\Users\ykupfer\Personal\nuXmv-2.0.0-win64\bin'
 BOARD_PATH = r"C:\Users\ykupfer\Personal\foraml verification final project\FVS final project\boards\board1.txt"
+TEMP_PATH = r"C:\Users\ykupfer\Personal\foraml verification final project\FVS final project"
+LURD_PATH r"C:\Users\ykupfer\Personal\foraml verification final project\FVS final project"
+
+NUXMV_PATH_ITAY = r'C:\Users\05ita\OneDrive - Bar-Ilan University - Students\לימודים\שנה ד\סמסטר א\אימות פורמלי\nuXmv-2.0.0-win64.tar\nuXmv-2.0.0-win64\nuXmv-2.0.0-win64\bin'
+BOARD_PATH_ITAY = r"C:\Users\05ita\Desktop\code_files\py_files\formalVS_files\boards\board1.txt"
+TEMP_PATH_ITAY = r"C:\Users\05ita\Desktop\code_files\py_files\formalVS_files\temp"
+LURD_PATH_ITAY = r"C:\Users\05ita\Desktop\code_files\py_files\formalVS_files\LURD"
+
 
 def printBoard(board):
-    print("****SOKOBAN****")
+    print("**** SOKOBAN ****")
     for row in board:
         print(row)
-    print("****************")
+    print("******************")
 
-
-                                           
 
 def get_initial_state(board):
     rows = len(board)
@@ -131,21 +137,22 @@ def createSMVModel(board):
     return smv
 
 
-def run_nuxmv(model_filename, engine=None, k=None):
+def run_nuxmv(model_filename, smv_path, temp_path, engine=None, k=None):
     start_time = time.time()
 
-    os.chdir(NUXMV_PATH)
+    full_path = os.path.join(temp_path, model_filename)
+
     if engine == "SAT":
         output_filename = model_filename.split('.')[0] + 'SAT.out'
     elif engine == "BDD":
         output_filename = model_filename.split('.')[0] + 'BDD.out'
     else:
-        nuxmv_process = subprocess.Popen(['.\\nuxmv.exe', model_filename],
+        nuxmv_process = subprocess.Popen(["nuXmv.exe", full_path],
                                         stdin=subprocess.PIPE,
                                         stdout=subprocess.PIPE,
                                         universal_newlines=True)
         output_filename = model_filename.split('.')[0] + '.out'
-    
+    os.chdir(temp_path)
     stdout, _ = nuxmv_process.communicate()
     with open(output_filename, 'w') as f:
         f.write(stdout)
@@ -157,9 +164,9 @@ def run_nuxmv(model_filename, engine=None, k=None):
     return [output_filename, end_time - start_time]
 
 
-def get_solution(filename):
+def get_solution(output_filename, temp_path):
     current_path = os.getcwd()
-    os.chdir(NUXMV_PATH)
+    os.chdir(smv_path)
     moves = []
     solved = False
     with open(filename, 'r') as f:
@@ -172,10 +179,55 @@ def get_solution(filename):
             for line in f:
                 pass
 
+    # get current directory
+    cwd = os.getcwd()
+
+    #### CHANGE HERE TO THE LOCATION OF YOUR nuXmv BIN FOLDER ####
+    os.chdir(temp_path)
+    ###############################################################
+
+    # a list to store the movements
+    steps = []
+    # a variable to store the last movement in case it doesn't change between State
+    last_step = None
+
+    # Open the file and iterate over the lines
+    with open(output_filename, 'r') as file:
+        for line in file:
+            # If we find a line with 'State' we add the last movement to the list
+            if 'State' in line:
+                if last_step is not None:
+                    steps.append(last_movement)
+            # If we find a line with 'movement =' we extract the movement
+            elif 'movement =' in line:
+                last_movement = line.split('=')[-1].strip()
+            elif 'Loop starts here' in line:
+                break
+
+    #change directory back to the original directory
+    os.chdir(cwd)
+
+    # Add the last movement if there is one
+    if last_movement is not None:
+        movements.append(last_movement)
+
+    return movements[:-1]
+
+
 
 
 if __name__ == "__main__":
-    board_path = BOARD_PATH
+    user_input = input("Does this computer belong to Itay (i) or Yonatan (y) ? ")
+    if user_input == "y":
+        board_path = BOARD_PATH
+        smv_path = NUXMV_PATH
+        temp_path = TEMP_PATH
+        report_path = LURD_PATH
+    else:
+        board_path = BOARD_PATH_ITAY
+        smv_path = NUXMV_PATH_ITAY
+        temp_path = TEMP_PATH_ITAY
+        report_path = LURD_PATH_ITAY
 
     board = []
     with open(board_path, 'r') as f:
@@ -189,13 +241,13 @@ if __name__ == "__main__":
     model_filename = 'sokoban_model.smv'
 
     current_path = os.getcwd()
-    os.chdir(NUXMV_PATH)
+    os.chdir(temp_path)
 
     with open(model_filename, 'w') as f:
         f.write(smv_model)
 
     os.chdir(current_path)
 
-    output_filename, runnning_time = run_nuxmv(model_filename)
+    output_filename, runnning_time = run_nuxmv(model_filename, smv_path, temp_path)
 
 

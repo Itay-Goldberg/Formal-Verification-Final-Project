@@ -3,12 +3,12 @@ import time
 import subprocess
 
 NUXMV_PATH = r'C:\Users\ykupfer\Personal\nuXmv-2.0.0-win64\bin'
-BOARD_PATH = r"C:\Users\ykupfer\Personal\foraml verification final project\FVS final project\boards\board1.txt"
+BOARD_PATH = r"C:\Users\ykupfer\Personal\foraml verification final project\FVS final project\boards"
 TEMP_PATH = r"C:\Users\ykupfer\Personal\foraml verification final project\FVS final project"
 LURD_PATH = r"C:\Users\ykupfer\Personal\foraml verification final project\FVS final project"
 
 NUXMV_PATH_ITAY = r'C:\Users\05ita\OneDrive - Bar-Ilan University - Students\לימודים\שנה ד\סמסטר א\אימות פורמלי\nuXmv-2.0.0-win64.tar\nuXmv-2.0.0-win64\nuXmv-2.0.0-win64\bin'
-BOARD_PATH_ITAY = r"C:\Users\05ita\Desktop\code_files\py_files\formalVS_files\boards\board1.txt"
+BOARD_PATH_ITAY = r"C:\Users\05ita\Desktop\code_files\py_files\formalVS_files\boards"
 TEMP_PATH_ITAY = r"C:\Users\05ita\Desktop\code_files\py_files\formalVS_files\temp"
 LURD_PATH_ITAY = r"C:\Users\05ita\Desktop\code_files\py_files\formalVS_files\LURD"
 
@@ -66,26 +66,43 @@ def get_transitions(board):
                 
                 for move, (dx,dy) in moves_dict.items():
                     ni, nj = i + dx, j + dy
-                    transitions += f'\t\t\t(board[{i}][{j}] = Keeper | board[{i}][{j}] = KeeperOnGoal) & move = {move} & board[{ni}][{nj}] = Wall: board[{i}][{j}];\n'
-                    transitions += f'\t\t\tboard[{i}][{j}] = Keeper & move = {move} & (board[{ni}][{nj}] = Floor | board[{ni}][{nj}] = Goal): Floor;\n'
-                    transitions += f'\t\t\tboard[{i}][{j}] = KeeperOnGoal & move = {move} & (board[{ni}][{nj}] = Floor | board[{ni}][{nj}] = Goal): Goal;\n'
-                    transitions += f'\t\t\tboard[{i}][{j}] = Goal & move = {move} & (board[{i-dx}][{j-dy}] = Keeper | board[{ni}][{nj}] = KeeperOnGoal): KeeperOnGoal;\n'
-                    transitions += f'\t\t\tboard[{i}][{j}] = Floor & move = {move} & (board[{i-dx}][{j-dy}] = Keeper | board[{ni}][{nj}] = KeeperOnGoal): KeeperOnGoal;\n'
+                    nni, nnj = i + 2 * dx, j + 2 * dy
 
-                    if 0 <= i + 2 * dx < rows and 0 <= j + 2 * dy < cols:
-                        nni, nnj = i + 2 * dx, j + 2 * dy
+                    # First Order - Effects of Steps
+                    # Step towards a wall - standing still
+                    transitions += f'\t\t\t(board[{i}][{j}] = Keeper | board[{i}][{j}] = KeeperOnGoal) & move = {move} & board[{ni}][{nj}] = Wall: board[{i}][{j}];\n'
+                    # A Keeper's step towards a floor - leaving a square as floor
+                    transitions += f'\t\t\tboard[{i}][{j}] = Keeper & move = {move} & (board[{ni}][{nj}] = Floor | board[{ni}][{nj}] = Goal): Floor;\n'
+                    # A KeeperOnGoal's step towards a floor - leaving a square as Goal
+                    transitions += f'\t\t\tboard[{i}][{j}] = KeeperOnGoal & move = {move} & (board[{ni}][{nj}] = Floor | board[{ni}][{nj}] = Goal): Goal;\n'
+                    # A Goal square stped by a Keeper - become a KeeperOnGoal
+                    transitions += f'\t\t\tboard[{i}][{j}] = Goal & move = {move} & (board[{i-dx}][{j-dy}] = Keeper | board[{i-dx}][{j-dy}] = KeeperOnGoal): KeeperOnGoal;\n'
+                    # A Floor square stped by a Keeper/KeeperOnGoal - become a Keeper
+                    transitions += f'\t\t\tboard[{i}][{j}] = Floor & move = {move} & (board[{i-dx}][{j-dy}] = Keeper | board[{i-dx}][{j-dy}] = KeeperOnGoal): Keeper;\n'
+
+                    # Second Order - Effects of Steps
+                    # A box/BoxOnGoal square that is blocked in the direction of the step by a box/BoxOnGoal or wall when the Keeper/KeeperOnGoal is facing the direction of the square - unchanged
+                    transitions += f'\t\t\t(board[{i}][{j}] = Box | board[{i}][{j}] = BoxOnGoal) & move = {move} & (board[{ni}][{nj}] = Box | board[{ni}][{nj}] = BoxOnGoal | board[{ni}][{nj}] = Wall) & (board[{i-dx}][{j-dy}] = Keeper | board[{i-dx}][{j-dy}] = KeeperOnGoal): board[{i}][{j}];\n'
+                    # A box square that is'nt blocked in the direction of the step when the Keeper/KeeperOnGoal is facing the direction of the square - become a Keeper
+                    transitions += f'\t\t\tboard[{i}][{j}] = Box & move = {move} & (board[{ni}][{nj}] = Floor | board[{ni}][{nj}] = Goal) & (board[{i-dx}][{j-dy}] = Keeper | board[{i-dx}][{j-dy}] = KeeperOnGoal): Keeper;\n'
+                    # A BoxOnGoal square that is'nt blocked in the direction of the step when the Keeper/KeeperOnGoal is facing the direction of the square - become a KeeperOnGoal
+                    transitions += f'\t\t\tboard[{i}][{j}] = BoxOnGoal & move = {move} & (board[{ni}][{nj}] = Floor | board[{ni}][{nj}] = Goal) & (board[{i-dx}][{j-dy}] = Keeper | board[{i-dx}][{j-dy}] = KeeperOnGoal): KeeperOnGoal;\n'
+
+                    if 0 <= nni < rows and 0 <= nnj < cols:
+                        # A Keeper's/KeeperOnGoal's step towards a Box/BoxOnGoal that is blocked in the direction of the step by Box/BoxOnGoal/wall - standing still
                         transitions += f'\t\t\t(board[{i}][{j}] = Keeper | board[{i}][{j}] = KeeperOnGoal) & move = {move} & (board[{ni}][{nj}] = Box | board[{ni}][{nj}] = BoxOnGoal) & (board[{nni}][{nnj}] = Box | board[{nni}][{nnj}] = BoxOnGoal | board[{nni}][{nnj}] = Wall): board[{i}][{j}];\n'
+                        # A Keeper's step towards a Box/BoxOnGoal that is'nt blocked in the direction of the step (floor/Goal) - become a Floor
                         transitions += f'\t\t\tboard[{i}][{j}] = Keeper & move = {move} & (board[{ni}][{nj}] = Box | board[{ni}][{nj}] = BoxOnGoal) & (board[{nni}][{nnj}] = Floor | board[{nni}][{nnj}] = Goal): Floor;\n'
+                        # A KeeperOnGoal's step towards a Box/BoxOnGoal that is'nt blocked in the direction of the step (floor/Goal) - become a Goal
                         transitions += f'\t\t\tboard[{i}][{j}] = KeeperOnGoal & move = {move} & (board[{ni}][{nj}] = Box | board[{ni}][{nj}] = BoxOnGoal) & (board[{nni}][{nnj}] = Floor | board[{nni}][{nnj}] = Goal): Goal;\n'
 
-                    transitions += f'\t\t\t(board[{i}][{j}] = Box | board[{i}][{j}] = BoxOnGoal) & move = {move} & (board[{ni}][{nj}] = Box | board[{ni}][{nj}] = BoxOnGoal | board[{ni}][{nj}] = Wall) & (board[{i-dx}][{j-dy}] = Keeper | board[{i-dx}][{j-dy}] = KeeperOnGoal): board[{i}][{j}];\n'
-                    transitions += f'\t\t\tboard[{i}][{j}] = Box & move = {move} & (board[{ni}][{nj}] = Floor | board[{ni}][{nj}] = Goal) & (board[{i-dx}][{j-dy}] = Keeper | board[{i-dx}][{j-dy}] = KeeperOnGoal): Keeper;\n'
-                    transitions += f'\t\t\tboard[{i}][{j}] = BoxOnGoal & move = {move} & (board[{ni}][{nj}] = Floor | board[{ni}][{nj}] = Goal) & (board[{i-dx}][{j-dy}] = Keeper | board[{i-dx}][{j-dy}] = KeeperOnGoal): KeeperOnGoal;\n'
 
                     if 0 <= i - 2 * dx < rows and 0 <= j - 2 * dy < cols:
                         ppi, ppj = i - 2 * dx, j - 2 * dy
-                        transitions += f'\t\t\tboard[{i}][{j}] = Goal & move = {move} & (board[{ni}][{nj}] = Box | board[{ni}][{nj}] = BoxOnGoal) & (board[{ppi}][{ppj}] = Keeper | board[{ppi}][{ppj}] = KeeperOnGoal): BoxOnGoal;\n'
-                        transitions += f'\t\t\tboard[{i}][{j}] = Floor & move = {move} & (board[{ni}][{nj}] = Box | board[{ni}][{nj}] = BoxOnGoal) & (board[{ppi}][{ppj}] = Keeper | board[{ppi}][{ppj}] = KeeperOnGoal): Box;\n'
+                        # A Goal square that have a box/BoxOnGoal fron the direction of the step when the Keeper/KeeperOnGoal is facing the direction of the box/BoxOnGoal - become a BoxOnGoal
+                        transitions += f'\t\t\tboard[{i}][{j}] = Goal & move = {move} & (board[{i-dx}][{j-dy}] = Box | board[{i-dx}][{j-dy}] = BoxOnGoal) & (board[{ppi}][{ppj}] = Keeper | board[{ppi}][{ppj}] = KeeperOnGoal): BoxOnGoal;\n'
+                        # A Floor square that have a box/BoxOnGoal fron the direction of the step when the Keeper/KeeperOnGoal is facing the direction of the box/BoxOnGoal - become a Box
+                        transitions += f'\t\t\tboard[{i}][{j}] = Floor & move = {move} & (board[{i-dx}][{j-dy}] = Box | board[{i-dx}][{j-dy}] = BoxOnGoal) & (board[{ppi}][{ppj}] = Keeper | board[{ppi}][{ppj}] = KeeperOnGoal): Box;\n'
 
                 transitions += f'\t\t\tTRUE: board[{i}][{j}];\n'
                 transitions += f'\t\tesac;\n\t\t'
@@ -166,65 +183,44 @@ def run_nuxmv(model_filename, smv_path, temp_path, engine=None, k=None):
 
 def get_solution(output_filename, temp_path):
     current_path = os.getcwd()
-    os.chdir(smv_path)
-    moves = []
-    solved = False
-    with open(filename, 'r') as f:
-        for line in f:
-            if 'is false' in line:
-                solved = True
-                break
-
-        if solved:
-            for line in f:
-                pass
-
-    # get current directory
-    cwd = os.getcwd()
-
-    #### CHANGE HERE TO THE LOCATION OF YOUR nuXmv BIN FOLDER ####
     os.chdir(temp_path)
-    ###############################################################
 
-    # a list to store the movements
     steps = []
-    # a variable to store the last movement in case it doesn't change between State
-    last_step = None
-
-    # Open the file and iterate over the lines
     with open(output_filename, 'r') as file:
-        for line in file:
-            # If we find a line with 'State' we add the last movement to the list
-            if 'State' in line:
-                if last_step is not None:
-                    steps.append(last_movement)
-            # If we find a line with 'movement =' we extract the movement
-            elif 'movement =' in line:
-                last_movement = line.split('=')[-1].strip()
-            elif 'Loop starts here' in line:
+        lines = file.readlines()
+        for i in range(len(lines)):
+            line = lines[i]
+
+            if 'Loop starts here' in line:
                 break
+            elif 'move =' in line:
+                # Check if the line located two lines ahead also contains "move ="
+                if i + 2 < len(lines) and 'move =' in lines[i + 2]:
+                    continue
+                else:
+                    step = line.split('=')[-1].strip()
+                    steps.append(step)
 
-    #change directory back to the original directory
-    os.chdir(cwd)
+            elif 'is true' in line:
+                return ['Not solvable']
 
-    # Add the last movement if there is one
-    if last_movement is not None:
-        movements.append(last_movement)
+    os.chdir(current_path)
 
-    return movements[:-1]
-
-
+    return steps[:-1]
 
 
 if __name__ == "__main__":
-    user_input = input("Does this computer belong to Itay (i) or Yonatan (y) ? ")
+    user_input = input("Does this computer belong to Itay (i) or Yonatan (y) ?\n")
+    board_num = input("Select the board number you would like to examine (1-7)\n")
+    board_name = "board" + board_num + ".txt"
+    print("analyzing " + board_name)
     if user_input == "y":
-        board_path = BOARD_PATH
+        board_path = os.path.join(BOARD_PATH, board_name)
         smv_path = NUXMV_PATH
         temp_path = TEMP_PATH
         report_path = LURD_PATH
     else:
-        board_path = BOARD_PATH_ITAY
+        board_path = os.path.join(BOARD_PATH_ITAY, board_name)
         smv_path = NUXMV_PATH_ITAY
         temp_path = TEMP_PATH_ITAY
         report_path = LURD_PATH_ITAY
@@ -249,5 +245,7 @@ if __name__ == "__main__":
     os.chdir(current_path)
 
     output_filename, runnning_time = run_nuxmv(model_filename, smv_path, temp_path)
+    steps = get_solution(output_filename, temp_path)
+    print(steps)
 
 

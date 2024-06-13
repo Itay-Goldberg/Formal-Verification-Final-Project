@@ -287,10 +287,12 @@ if __name__ == "__main__":
     elif board_analyzing == "2":
         print(model_filename + " is running...")
         output_filename, runnning_time = run_nuxmv(model_filename, smv_path, temp_path, "BDD")
+        print("The runnning time is " + str(runnning_time))
     elif board_analyzing == "3":
         k = input("k = ")
         print(model_filename + " is running...")
         output_filename, runnning_time = run_nuxmv(model_filename, smv_path, temp_path, "SAT", k)
+        print("The runnning time is " + str(runnning_time))
     else:
         output_filename = model_filename.split('.')[0] + '.out'
     steps = get_solution(output_filename, temp_path)

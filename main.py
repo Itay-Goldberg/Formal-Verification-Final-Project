@@ -14,17 +14,19 @@ LURD_PATH_ITAY = r"C:\Users\05ita\Desktop\code_files\py_files\formalVS_files\LUR
 
 
 def printBoard(board):
-    print("**** SOKOBAN ****")
+    n = len(board)
+    m = len(board[0])
+    print("Board Size: " + str(n) + " X " + str(m))
+    print("* * * * * * * * * * * * * * * * * * * *")
     for row in board:
         print(row)
-    print("******************")
+    print("* * * * * * * * * * * * * * * * * * * *")
 
 
 def get_initial_state(board):
     rows = len(board)
 
     cols = len(board[0])
-    print(cols)
     init = ''
     for i in range(rows):
         for j in range(cols):
@@ -160,9 +162,27 @@ def run_nuxmv(model_filename, smv_path, temp_path, engine=None, k=None):
     full_path = os.path.join(temp_path, model_filename)
 
     if engine == "SAT":
-        output_filename = model_filename.split('.')[0] + 'SAT.out'
+        output_filename = model_filename.split('.')[0] + '_SAT_' + str(k) + '.out'
+        # Run the command
+        nuxmv_process = subprocess.Popen(["nuXmv.exe", "-int", full_path],
+                                        stdin=subprocess.PIPE,
+                                        stdout=subprocess.PIPE,
+                                        universal_newlines=True)
+        nuxmv_process.stdin.write("go_bmc\n")
+        nuxmv_process.stdin.write(f"check_ltlspec_bmc -k " + str(k) + "\n")
+        # enter ctrl+c to exit
+        nuxmv_process.stdin.write("quit\n")
     elif engine == "BDD":
-        output_filename = model_filename.split('.')[0] + 'BDD.out'
+        output_filename = model_filename.split('.')[0] + '_BDD.out'
+        # Run the command
+        nuxmv_process = subprocess.Popen(["nuXmv.exe", "-int", full_path],
+                                        stdin=subprocess.PIPE,
+                                        stdout=subprocess.PIPE,
+                                        universal_newlines=True)
+        nuxmv_process.stdin.write("go\n")
+        nuxmv_process.stdin.write(f"check_ltlspec\n")
+        # enter ctrl+c to exit
+        nuxmv_process.stdin.write("quit\n")
     else:
         nuxmv_process = subprocess.Popen(["nuXmv.exe", full_path],
                                         stdin=subprocess.PIPE,
@@ -173,7 +193,7 @@ def run_nuxmv(model_filename, smv_path, temp_path, engine=None, k=None):
     stdout, _ = nuxmv_process.communicate()
     with open(output_filename, 'w') as f:
         f.write(stdout)
-    print(f"Output written to {output_filename}")
+    # print(f"Output written to {output_filename}")
 
     end_time = time.time()
 
@@ -186,26 +206,41 @@ def get_solution(output_filename, temp_path):
     os.chdir(temp_path)
 
     steps = []
-    with open(output_filename, 'r') as file:
-        lines = file.readlines()
-        for i in range(len(lines)):
-            line = lines[i]
+    Loop_starts_here_counter = 0
+    state_counter = 0
 
-            if 'Loop starts here' in line:
-                break
-            elif 'move =' in line:
-                # Check if the line located two lines ahead also contains "move ="
-                if i + 2 < len(lines) and 'move =' in lines[i + 2]:
-                    continue
-                else:
-                    step = line.split('=')[-1].strip()
-                    steps.append(step)
+    try:
+        with open(output_filename, 'r') as file:
+            lines = file.readlines()
+            for i in range(len(lines)):
+                line = lines[i]
 
-            elif 'is true' in line:
-                return ['Not solvable']
+                if 'Loop starts here' in line:
+                    if Loop_starts_here_counter == 1:
+                        os.chdir(current_path)
+                        return steps
+                    else:
+                        Loop_starts_here_counter += 1
+                elif 'move =' in line:
+                    if Loop_starts_here_counter == 1:
+                        continue
+                    # Check if the line located two lines ahead also contains "move ="
+                    if i + 2 < len(lines) and 'move =' in lines[i + 2]:
+                        continue
+                    else:
+                        step = line.split('=')[-1].strip()
+                        steps.append(step)
+                elif  i > 1 and 'State:' in line and 'move =' not in lines[i-1] and state_counter > 0:
+                        steps.append(step)
+                elif 'State:' in line:
+                    state_counter += 1
+                elif 'is true' in line:
+                    return ['Not solvable']
 
+    except FileNotFoundError:
+        return ['The run results cannot be analyzed because the smv file has not been run before']
+    
     os.chdir(current_path)
-
     return steps[:-1]
 
 
@@ -213,7 +248,6 @@ if __name__ == "__main__":
     user_input = input("Does this computer belong to Itay (i) or Yonatan (y) ?\n")
     board_num = input("Select the board number you would like to examine (1-7)\n")
     board_name = "board" + board_num + ".txt"
-    print("analyzing " + board_name)
     if user_input == "y":
         board_path = os.path.join(BOARD_PATH, board_name)
         smv_path = NUXMV_PATH
@@ -229,12 +263,14 @@ if __name__ == "__main__":
     with open(board_path, 'r') as f:
         for line in f:
             board.append(list(line.strip('\n')))
+    
+    board_name = board_name.split('.')[0]
+    model_filename = 'sokoban_model_' + str(board_name) + '.smv'
 
+    print("This is what the board you chose to examine looks like")
     printBoard(board)
 
     smv_model = createSMVModel(board)
-
-    model_filename = 'sokoban_model.smv'
 
     current_path = os.getcwd()
     os.chdir(temp_path)
@@ -244,8 +280,21 @@ if __name__ == "__main__":
 
     os.chdir(current_path)
 
-    output_filename, runnning_time = run_nuxmv(model_filename, smv_path, temp_path)
+    board_analyzing = input("What would you like to do?\n(1) run " + model_filename + "\n(2) run " + model_filename + " in BDD mode\n(3) run " + model_filename + " in SAT mode\n(4) receive the analysis of the results\n")
+    if board_analyzing == "1":
+        print(model_filename + " is running...")
+        output_filename, runnning_time = run_nuxmv(model_filename, smv_path, temp_path)
+    elif board_analyzing == "2":
+        print(model_filename + " is running...")
+        output_filename, runnning_time = run_nuxmv(model_filename, smv_path, temp_path, "BDD")
+    elif board_analyzing == "3":
+        k = input("k = ")
+        print(model_filename + " is running...")
+        output_filename, runnning_time = run_nuxmv(model_filename, smv_path, temp_path, "SAT", k)
+    else:
+        output_filename = model_filename.split('.')[0] + '.out'
     steps = get_solution(output_filename, temp_path)
+    print("This is the solution for the tested board")
     print(steps)
 
 

@@ -266,12 +266,10 @@ def iterative_solver(board, model_filename, k):
     solution = []
     total_time = 0
     original_board = [row[:] for row in board]  # Backup original board
+    board = [row[:] for row in original_board]  # Start with the original board
 
     for iteration, goal in enumerate(goals, 1):
         print(f"\nIteration number {iteration}: Targeting goal at {goal}")
-
-        # Reset board to its original configuration
-        board = [row[:] for row in original_board]
 
         # Prepare the board for the current iteration's goal
         setup_board_for_goal(board, goals, goal)
@@ -295,16 +293,6 @@ def iterative_solver(board, model_filename, k):
 
     print(f"\n\nThe final solution is: {solution} \nTotal number of iterations: {iteration} \nTotal time for the given board: {total_time}")
 
-def reintegrate_keeper(board):
-    # Ensure there is only one keeper on the board at any time
-    keeper_found = False
-    for i, row in enumerate(board):
-        for j, cell in enumerate(row):
-            if cell in {'@', '+'}:
-                if keeper_found:
-                    board[i][j] = '-' if cell == '@' else '.'
-                keeper_found = True
-
 def prepare_solver(board):
     # Mapping of states to symbols used on the board
     state_to_symbol = {
@@ -325,16 +313,15 @@ def prepare_solver(board):
 
     return state_to_symbol, goal_symbols, goals
 
-
 def setup_board_for_goal(board, goals, current_goal):
-    # Clear goals and set the current goal
+    # Keep boxes on goals intact
     for x, y in goals:
         if board[x][y] == '*':
-            board[x][y] = '$'  # Revert box on goal to just box
+            board[x][y] = '*'  # Keep box on goal as box on goal
         elif board[x][y] == '+':
-            board[x][y] = '@'  # Revert keeper on goal to just keeper
+            board[x][y] = '+'  # Keep keeper on goal as keeper on goal
         elif board[x][y] == '.':
-            board[x][y] = '-'  # Revert goal to floor
+            board[x][y] = '-'  # Revert unachieved goal to floor
 
     # Set current goal
     if board[current_goal[0]][current_goal[1]] == '@':
@@ -359,27 +346,11 @@ def update_board_from_model_output(board, output_filename, state_to_symbol):
             board[i][j] = state_to_symbol[state]
 
 
-def reintroduce_goals(board, goal_statuses):
-    for (x, y), achieved in goal_statuses.items():
-        if not achieved:
-            if board[x][y] == '@':
-                board[x][y] = '+'
-            elif board[x][y] == '-':
-                board[x][y] = '.'
-            elif board[x][y] == '$':
-                board[x][y] = '*'
 
-
-def update_goal_statuses(board, goals, goal_statuses):
-    for x, y in goals:
-        if board[x][y] == '*':
-            goal_statuses[(x, y)] = True  # Goal achieved if a box is on it
-        else:
-            goal_statuses[(x, y)] = False  # Goal not achieved
 
 if __name__ == "__main__":
     user_input = input("Does this computer belong to Itay (i) or Yonatan (y) ?\n")
-    board_num = input("Select the board number you would like to examine (1-8)\n")
+    board_num = input("Select the board number you would like to examine (1-9)\n")
     board_name = "board" + board_num + ".txt"
     if user_input == "y":
         board_path = os.path.join(BOARD_PATH, board_name)

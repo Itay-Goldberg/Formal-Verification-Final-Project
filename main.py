@@ -222,9 +222,6 @@ def get_solution(output_filename, temp_path):
 
                     # Only append the last move if there has been a state change without a new move
                     if state_counter > move_counter and last_move is not None:
-                        print(f"step1: {state_counter}")
-                        print(f"move_c1: {move_counter}")
-                        print(f"last_move1: {last_move}")
                         steps.append(last_move)
                         move_counter += 1
 
@@ -235,9 +232,6 @@ def get_solution(output_filename, temp_path):
 
                     # Append the move and increment the move counter
                     if state_counter >= move_counter and move_counter:
-                        print(f"step2: {state_counter}")
-                        print(f"move_c2: {move_counter}")
-                        print(f"last_move2: {last_move}")
                         steps.append(last_move)
                     move_counter += 1
 

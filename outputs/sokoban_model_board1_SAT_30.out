@@ -24,9 +24,10 @@
 *** Copyright (C) 2009-2019 by University of Trento and others
 *** See http://mathsat.fbk.eu
 
--- specification !( F board[1][3] = BoxOnGoal)  is false
+nuXmv > nuXmv > -- no counterexample found with bound 0
+-- specification !( F board[1][3] = BoxOnGoal)    is false
 -- as demonstrated by the following execution sequence
-Trace Description: LTL Counterexample 
+Trace Description: BMC Counterexample 
 Trace Type: Counterexample 
   -> State: 1.1 <-
     board[0][0] = Wall
@@ -44,16 +45,10 @@ Trace Type: Counterexample
     board[2][2] = Wall
     board[2][3] = Wall
     board[2][4] = Wall
-    move = l
-  -> State: 1.2 <-
     move = r
-  -> State: 1.3 <-
+  -> State: 1.2 <-
     board[1][1] = Floor
     board[1][2] = Keeper
     board[1][3] = BoxOnGoal
-    move = l
-  -- Loop starts here
-  -> State: 1.4 <-
-    board[1][1] = Keeper
-    board[1][2] = Floor
-  -> State: 1.5 <-
+    move = d
+nuXmv > 

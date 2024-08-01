@@ -24,7 +24,7 @@
 *** Copyright (C) 2009-2019 by University of Trento and others
 *** See http://mathsat.fbk.eu
 
--- specification !( F board[1][3] = BoxOnGoal)  is false
+nuXmv > nuXmv > nuXmv > -- specification !( F board[1][3] = BoxOnGoal)  is false
 -- as demonstrated by the following execution sequence
 Trace Description: LTL Counterexample 
 Trace Type: Counterexample 
@@ -57,3 +57,4 @@ Trace Type: Counterexample
     board[1][1] = Keeper
     board[1][2] = Floor
   -> State: 1.5 <-
+nuXmv > 

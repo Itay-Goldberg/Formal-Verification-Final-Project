@@ -200,6 +200,7 @@ def get_solution(output_filename, temp_path):
     move_counter = 0
     skip_first_move = False
     is_loop = False
+    without_move = False
 
     try:
         with open(output_filename, 'r') as file:
@@ -214,21 +215,29 @@ def get_solution(output_filename, temp_path):
 
                 if '-> State:' in line:
                     state_counter += 1  # Increment state counter
+                    without_move = True
 
                     if state_counter == 2 and i + 1 < len(lines) and 'move =' in lines[i + 1]:
                         skip_first_move = True  # Set flag to skip the first move
 
                     # Only append the last move if there has been a state change without a new move
                     if state_counter > move_counter and last_move is not None:
+                        print(f"step1: {state_counter}")
+                        print(f"move_c1: {move_counter}")
+                        print(f"last_move1: {last_move}")
                         steps.append(last_move)
                         move_counter += 1
 
                 elif 'move =' in line:
                     # Update the last known move when a move is explicitly specified
                     last_move = line.split('=')[-1].strip()
+                    without_move = False
 
                     # Append the move and increment the move counter
                     if state_counter >= move_counter and move_counter:
+                        print(f"step2: {state_counter}")
+                        print(f"move_c2: {move_counter}")
+                        print(f"last_move2: {last_move}")
                         steps.append(last_move)
                     move_counter += 1
 
@@ -244,10 +253,10 @@ def get_solution(output_filename, temp_path):
     if skip_first_move:
         steps = steps[1:]
 
-    if not is_loop:
-        steps = steps[:-1]
-
-    return steps
+    if is_loop or not without_move:
+        return steps[:-1]
+    else:
+        return steps
 
 
 
